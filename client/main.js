@@ -1,8 +1,29 @@
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
-
+import { _ } from 'meteor/underscore';
 import './main.html';
 import '../imports/candles.js';
+
+candleDisplay = {
+  width: 5,
+  margin: 0,
+  spacing: 2
+};
+
+drawCandles = function (endIndex) {
+  candleDisplay.endIndex = endIndex;
+  candleDisplay.startIndex = endIndex - candleScreenToOrder($("#chart").width());
+}
+
+candleOrderToScreen = function (index) {
+  return index * (candleDisplay.width + candleDisplay.spacing) + candleDisplay.margin;
+}
+
+candleScreenToOrder = function (x) {
+  var index = Math.floor((x - candleDisplay.margin) / (candleDisplay.width + candleDisplay.spacing));
+  return index;
+}
+
 
 Template.chart.onCreated(function helloOnCreated() {
   Meteor.subscribe("candles");
