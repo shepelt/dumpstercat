@@ -10,7 +10,8 @@ candleDisplay = {
 	margin: 1,
 	spacing: 2,
 	positive: "0xCD6155",
-	negative: "0x5DADE2"
+	negative: "0x5DADE2",
+	neutral: "0x566573"
 };
 
 drawCandles = function (endIndex) {
@@ -28,13 +29,15 @@ drawCandles = function (endIndex) {
 	var priceRange = maxPrice - minPrice;
 
 	var xOffset = candleDisplay.margin;
-	var lastTradePrice = 0;
 	_.each(candles, function (candle) {
 		var candleRising = false;
 		var candleColor = candleDisplay.negative;
-		if (candle.trade_price >= lastTradePrice) {
+		if (candle.trade_price > candle.opening_price) {
 			candleRising = true;
 			candleColor = candleDisplay.positive;
+		} else if (candle.trade_price == candle.opening_price) {
+			candleRising = false;
+			candleColor = candleDisplay.neutral;
 		} else {
 			candleRising = false;
 			candleColor = candleDisplay.negative;
@@ -54,7 +57,6 @@ drawCandles = function (endIndex) {
 
 
 		xOffset = xOffset + candleDisplay.width + candleDisplay.spacing;
-		lastTradePrice = candle.trade_price;
 	});
 }
 
