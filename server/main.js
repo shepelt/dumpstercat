@@ -14,7 +14,7 @@ Meteor.startup(() => {
 		index: 1
 	});
 
-	fetchCandles(65);
+	fetchCandles(1024);
 	setInterval(function () {
 		fetchCandles(5);
 	}, 1000 * intervalSeconds);
@@ -47,6 +47,6 @@ function processCandle(candle) {
 	delete candle.candle_date_time_kst;
 	delete candle.unit;
 
-
+	if (candle.closed == false) { console.log(candle); }
 	Candles.upsert(candle.market + candle.timestamp, candle);
 }

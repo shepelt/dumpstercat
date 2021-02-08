@@ -9,3 +9,7 @@ timestampToIndex = function (timestamp) {
 indexToTimestamp = function (index) {
     return index * 3 * 100000;
 }
+
+getLastCandleIndex = function () {
+    return Candles.findOne({}, { sort: { index: -1 } }).index; // TODO: fix
+}
