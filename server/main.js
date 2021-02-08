@@ -47,6 +47,16 @@ function processCandle(candle) {
 	delete candle.candle_date_time_kst;
 	delete candle.unit;
 
+	var boxLow = candle.opening_price;
+	var boxHigh = candle.trade_price;
+	if (boxLow > boxHigh) {
+		var swapTemp = boxLow;
+		boxLow = boxHigh;
+		boxHigh = swapTemp;
+	}
+	candle.box_low_price = boxLow;
+	candle.box_high_price = boxHigh;
+
 	if (candle.closed == false) { console.log(candle); }
 	Candles.upsert(candle.market + candle.timestamp, candle);
 }

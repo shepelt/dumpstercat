@@ -6,8 +6,11 @@ import '../imports/candles.js';
 
 candleDisplay = {
 	width: 5,
+	wickWidth: 1,
 	margin: 1,
-	spacing: 2
+	spacing: 2,
+	positive: "0xCD6155",
+	negative: "0x5DADE2"
 };
 
 drawCandles = function (endIndex) {
@@ -25,15 +28,33 @@ drawCandles = function (endIndex) {
 	var priceRange = maxPrice - minPrice;
 
 	var xOffset = candleDisplay.margin;
+	var lastTradePrice = 0;
 	_.each(candles, function (candle) {
-		var height = candle.high_price - candle.low_price;
-		var priceOffset = candle.low_price - minPrice;
+		var candleRising = false;
+		var candleColor = candleDisplay.negative;
+		if (candle.trade_price >= lastTradePrice) {
+			candleRising = true;
+			candleColor = candleDisplay.positive;
+		} else {
+			candleRising = false;
+			candleColor = candleDisplay.negative;
+		}
 
-		var yOffset = candlePriceToScreen(priceRange, canvasHeight, candle.low_price - minPrice) + candleDisplay.margin;
-		var yHeight = candlePriceToScreen(priceRange, canvasHeight, candle.high_price - minPrice) - yOffset;
-		// console.log("y", yOffset, "height", yHeight)
-		addRect(xOffset, yOffset, candleDisplay.width, yHeight, "0x9fa8a3");
+
+		// draw box
+		var yOffset = candlePriceToScreen(priceRange, canvasHeight, candle.box_low_price - minPrice) + candleDisplay.margin;
+		var yHeight = candlePriceToScreen(priceRange, canvasHeight, candle.box_high_price - minPrice) - yOffset;
+
+		addRect(xOffset, yOffset, candleDisplay.width, yHeight, candleColor);
+
+		// draw wick
+		yOffset = candlePriceToScreen(priceRange, canvasHeight, candle.low_price - minPrice) + candleDisplay.margin;
+		yHeight = candlePriceToScreen(priceRange, canvasHeight, candle.high_price - minPrice) - yOffset;
+		addRect(xOffset + Math.floor(candleDisplay.width / 2), yOffset, candleDisplay.wickWidth, yHeight, candleColor);
+
+
 		xOffset = xOffset + candleDisplay.width + candleDisplay.spacing;
+		lastTradePrice = candle.trade_price;
 	});
 }
 
