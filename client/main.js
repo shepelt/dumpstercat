@@ -15,6 +15,10 @@ candleDisplay = {
 };
 
 drawCandles = function (endIndex) {
+	// empty container
+	rectContainer.removeChildren();
+
+
 	candleDisplay.endIndex = endIndex;
 	candleDisplay.startIndex = endIndex - candleScreenToOrder($("#chart").width()) + 1;
 	var candles = Candles.find({ index: { $gte: candleDisplay.startIndex, $lte: candleDisplay.endIndex } }, { sort: { index: 1 } }).fetch();
@@ -30,17 +34,16 @@ drawCandles = function (endIndex) {
 
 	var xOffset = candleDisplay.margin;
 	_.each(candles, function (candle) {
-		var candleRising = false;
+		var candleRising = candle.rising;
 		var candleColor = candleDisplay.negative;
-		if (candle.trade_price > candle.opening_price) {
-			candleRising = true;
+		if (candleRising) {
 			candleColor = candleDisplay.positive;
-		} else if (candle.trade_price == candle.opening_price) {
-			candleRising = false;
-			candleColor = candleDisplay.neutral;
 		} else {
-			candleRising = false;
 			candleColor = candleDisplay.negative;
+		}
+
+		if (candle.trade_price == candle.opening_price) {
+			candleColor = candleDisplay.neutral;
 		}
 
 
@@ -104,15 +107,8 @@ Template.chart.onRendered(function () {
 	app.stage.addChild(rectContainer);
 })
 
-// Template.hello.helpers({
-//   counter() {
-//     return Template.instance().counter.get();
-//   },
-// });
-
 Template.chart.events({
 	'click button'(event, instance) {
-		// addRect(200, 100, 10, 100, "0x9fa8a3");
 		drawCandles(getLastCandleIndex());
 	},
 });

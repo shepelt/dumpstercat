@@ -49,14 +49,16 @@ function processCandle(candle) {
 
 	var boxLow = candle.opening_price;
 	var boxHigh = candle.trade_price;
+	candle.rising = true;
 	if (boxLow > boxHigh) {
 		var swapTemp = boxLow;
 		boxLow = boxHigh;
 		boxHigh = swapTemp;
+		candle.rising = false;
 	}
 	candle.box_low_price = boxLow;
 	candle.box_high_price = boxHigh;
 
-	if (candle.closed == false) { console.log(candle); }
+	if (candle.closed == false) { console.log(candle); } // log live candle update
 	Candles.upsert(candle.market + candle.timestamp, candle);
 }
