@@ -21,7 +21,7 @@ drawCandles = function (endIndex) {
 
 	candleDisplay.endIndex = endIndex;
 	candleDisplay.startIndex = endIndex - candleScreenToOrder($("#chart").width()) + 1;
-	var candles = Candles.find({ index: { $gte: candleDisplay.startIndex, $lte: candleDisplay.endIndex } }, { sort: { index: 1 } }).fetch();
+	var candles = Candles.find({ "market": "KRW-BTC", index: { $gte: candleDisplay.startIndex, $lte: candleDisplay.endIndex } }, { sort: { index: 1 } }).fetch();
 
 	// draw frame
 	var canvasHeight = $("#chart").height() - candleDisplay.margin * 2;
@@ -51,12 +51,28 @@ drawCandles = function (endIndex) {
 		var yOffset = candlePriceToScreen(priceRange, canvasHeight, candle.box_low_price - minPrice) + candleDisplay.margin;
 		var yHeight = candlePriceToScreen(priceRange, canvasHeight, candle.box_high_price - minPrice) - yOffset;
 
-		addRect(xOffset, yOffset, candleDisplay.width, yHeight, candleColor);
+		var alpha = 1.0;
+		if (candle.closed == false) {
+			alpha = 1.0;
+		} else {
+			if (candle.height_outlier) {
+				alpha = 0.5;
+				candleColor = candleDisplay.neutral;
+			} else {
+				alpha = 1;
+			}
+		}
+		addRect(xOffset, yOffset, candleDisplay.width, yHeight, candleColor, alpha);
 
 		// draw wick
+		var accent = undefined;
+		if (candle.height_outlier == false && candle.dump_count > 2) {
+			accent = candle.dump_count + "";
+		}
+
 		yOffset = candlePriceToScreen(priceRange, canvasHeight, candle.low_price - minPrice) + candleDisplay.margin;
 		yHeight = candlePriceToScreen(priceRange, canvasHeight, candle.high_price - minPrice) - yOffset;
-		addRect(xOffset + Math.floor(candleDisplay.width / 2), yOffset, candleDisplay.wickWidth, yHeight, candleColor);
+		addRect(xOffset + Math.floor(candleDisplay.width / 2), yOffset, candleDisplay.wickWidth, yHeight, candleColor, alpha, accent);
 
 
 		xOffset = xOffset + candleDisplay.width + candleDisplay.spacing;
@@ -107,20 +123,39 @@ Template.chart.onRendered(function () {
 	app.stage.addChild(rectContainer);
 })
 
+Meteor.setInterval(function () {
+	drawCandles(getLastCandleIndex());
+}, 1000);
+
 Template.chart.events({
 	'click button'(event, instance) {
 		drawCandles(getLastCandleIndex());
 	},
 });
 
-addRect = function (x, y, xd, yd, color) {
+addRect = function (x, y, xd, yd, color, alpha, text) {
+	if (alpha == undefined) {
+		alpha = 1.0;
+	}
 	var container = new PIXI.Container();
 	var graphics = new PIXI.Graphics();
 	graphics.lineStyle(0);
-	graphics.beginFill(color, 1.0);
+	graphics.beginFill(color, alpha);
 	graphics.drawRoundedRect(0, 0, xd, yd, 0);
 	graphics.endFill();
 	container.addChild(graphics);
+
+	if (text) {
+		var textObj = new PIXI.Text(text, {
+			fontSize: 8
+		});
+
+		// setting the anchor point to 0.5 will center align the text... great for spinning!
+		textObj.anchor.set(0.5);
+		textObj.x = xd / 2;
+		textObj.y = yd - 8;
+		container.addChild(textObj);
+	}
 
 	container.x = x;
 	container.y = y;
