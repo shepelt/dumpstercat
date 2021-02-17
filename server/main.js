@@ -6,7 +6,36 @@ var MA = require('moving-average');
 
 const upbit = new Upbit();
 
-const intervalSeconds = 10;
+var btcCandleProcessor = new CandleProcessor("BTC");
+var ethCandleProcessor = new CandleProcessor("ETH");
+
+function fetchCandles(count) {
+	// process BTC candles
+	upbit.candlesMinutes({ unit: 5, market: 'KRW-BTC', count: count, to: undefined })
+		.then(candles => {
+			console.log("[ BTC ] [candles updated]")
+			for (var i = candles.length - 1; i >= 0; i--) {
+				btcCandleProcessor.processCandle(candles[i]);
+			}
+		})
+		.catch(err => {
+			console.error(err);
+		})
+
+	// process ETH candles
+	upbit.candlesMinutes({ unit: 5, market: 'KRW-ETH', count: count, to: undefined })
+		.then(candles => {
+			console.log("[ ETH ] [candles updated]")
+			for (var i = candles.length - 1; i >= 0; i--) {
+				ethCandleProcessor.processCandle(candles[i]);
+			}
+		})
+		.catch(err => {
+			console.error(err);
+		})
+}
+
+const intervalSeconds = 1;
 Meteor.startup(() => {
 	// ensure inddex on collections
 	Candles._ensureIndex({
@@ -16,25 +45,10 @@ Meteor.startup(() => {
 
 	fetchCandles(1024);
 	setInterval(function () {
-		fetchCandles(5);
+		fetchCandles(2);
 	}, 1000 * intervalSeconds);
 });
 
-
-var btcCandleProcessor = new CandleProcessor("BTC");
-
-function fetchCandles(count) {
-	upbit.candlesMinutes({ unit: 5, market: 'KRW-BTC', count: count, to: undefined })
-		.then(candles => {
-			console.log("[candles updated]")
-			for (var i = candles.length - 1; i >= 0; i--) {
-				btcCandleProcessor.processCandle(candles[i]);
-			}
-		})
-		.catch(err => {
-			console.error(err);
-		})
-}
 
 function CandleProcessor(market) {
 	const fiveMinuteSecs = 5 * 60 * 1000;
@@ -52,7 +66,7 @@ function CandleProcessor(market) {
 
 		if (this.lastClosedCandleIndex != -1 && candle.index <= this.lastClosedCandleIndex) {
 			// skip processed candles
-			console.log("[skipping candle]", candle.index)
+			console.log("[", market, "]", "[skipping candle]", candle.index)
 			return;
 		}
 
@@ -81,7 +95,7 @@ function CandleProcessor(market) {
 
 		if (candle.closed) {
 			if (candle.index > this.lastClosedCandleIndex) {
-				console.log("[updating closed candle]", candle.index);
+				console.log("[", market, "]", "[updating closed candle]", candle.index);
 				this.lastClosedCandleIndex = candle.index;
 
 				// update moving average
@@ -110,7 +124,7 @@ function CandleProcessor(market) {
 				}
 			}
 		} else {
-			console.log("[updating open candle]", candle.index)
+			console.log("[", market, "]", "[updating open candle]", candle.index)
 
 			// pending analysis (will be finalized when candle closed)
 
@@ -137,7 +151,7 @@ function CandleProcessor(market) {
 				}
 			}
 		}
-		console.log(candle);
+		// console.log(candle);
 
 		Candles.upsert(candle.market + candle.timestamp, candle);
 	}

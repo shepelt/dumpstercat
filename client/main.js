@@ -3,6 +3,7 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { _ } from 'meteor/underscore';
 import './main.html';
 import '../imports/candles.js';
+import './router.js';
 
 candleDisplay = {
 	width: 5,
@@ -21,7 +22,7 @@ drawCandles = function (endIndex) {
 
 	candleDisplay.endIndex = endIndex;
 	candleDisplay.startIndex = endIndex - candleScreenToOrder($("#chart").width()) + 1;
-	var candles = Candles.find({ "market": "KRW-BTC", index: { $gte: candleDisplay.startIndex, $lte: candleDisplay.endIndex } }, { sort: { index: 1 } }).fetch();
+	var candles = Candles.find({ "market": Session.get("market"), index: { $gte: candleDisplay.startIndex, $lte: candleDisplay.endIndex } }, { sort: { index: 1 } }).fetch();
 
 	// draw frame
 	var canvasHeight = $("#chart").height() - candleDisplay.margin * 2;
@@ -121,11 +122,15 @@ Template.chart.onRendered(function () {
 	stage = new PIXI.Container();
 	rectContainer = new PIXI.Container();
 	app.stage.addChild(rectContainer);
-})
 
-Meteor.setInterval(function () {
-	drawCandles(getLastCandleIndex());
-}, 1000);
+	// start regular rendering
+	Tracker.autorun(function () {
+		var lastCandle = getLastCandle(Session.get("market"));
+		if (lastCandle) {
+			drawCandles(lastCandle.index);
+		}
+	})
+})
 
 Template.chart.events({
 	'click button'(event, instance) {

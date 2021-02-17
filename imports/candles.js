@@ -10,6 +10,6 @@ indexToTimestamp = function (index) {
     return index * 3 * 100000;
 }
 
-getLastCandleIndex = function () {
-    return Candles.findOne({}, { sort: { index: -1 } }).index; // TODO: fix
+getLastCandle = function (market) {
+    return Candles.findOne({ market: "KRW-BTC" }, { sort: { index: -1 } });
 }

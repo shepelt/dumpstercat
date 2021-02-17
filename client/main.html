@@ -3,15 +3,23 @@
   <script src="pixi.min.js"></script>
 </head>
 
-<body>
-  <h1>Dumpstercat Eye</h1>
+<template name="main">
+  DumpsterCat
+</template>
 
-  {{> chart}}
-</body>
+<template name="notFound">
+  404
+</template>
+
+<template name="btc">
+  <p>Bitcoin</p>
+  {{> chart market="BTC"}}
+</template>
+<template name="eth">
+  <p>Ethereum</p>
+  {{> chart market="ETH"}}
+</template>
 
 <template name="chart">
   <div class="chart" id="chart"></div>
-  <p>
-    <button>Test</button>
-  </p>
 </template>
