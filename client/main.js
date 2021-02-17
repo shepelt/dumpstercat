@@ -11,10 +11,13 @@ candleDisplay = {
 	wickWidth: 1,
 	margin: 1,
 	spacing: 2,
-	positive: "0xCD6155",
-	negative: "0x5DADE2",
+	positive: "0xEF5450",
+	negative: "0x25A69A",
 	neutral: "0x566573",
-	infowidth: 65
+	infowidth: 65,
+	background: "0x161A25",
+	infobackground: "0xFFFFFF",
+	textcolor: "0xFFFFFF"
 };
 
 drawCandles = function (endIndex) {
@@ -30,8 +33,8 @@ drawCandles = function (endIndex) {
 	// draw frame
 	var canvasHeight = $("#chart").height() - candleDisplay.margin * 2;
 	var canvasWidth = chartWidth - candleDisplay.margin * 2;
-	addRect(candleDisplay.margin, candleDisplay.margin, canvasWidth, canvasHeight, "0xFFFFFF");
-	addRect(chartWidth, candleDisplay.margin, candleDisplay.infowidth - candleDisplay.margin, canvasHeight, "0xFFFFFF");
+	addRect(candleDisplay.margin, candleDisplay.margin, canvasWidth, canvasHeight, candleDisplay.background);
+	addRect(chartWidth, candleDisplay.margin, candleDisplay.infowidth - candleDisplay.margin, canvasHeight, candleDisplay.infobackground);
 
 	var minPrice = _.min(candles, function (candle) { return candle.low_price }).low_price;
 	var maxPrice = _.max(candles, function (candle) { return candle.high_price }).high_price;
@@ -77,8 +80,8 @@ drawCandles = function (endIndex) {
 		}
 
 		yOffset = candlePriceToScreen(priceRange, canvasHeight, candle.low_price - minPrice) + candleDisplay.margin;
-		yHeight = candlePriceToScreen(priceRange, canvasHeight, candle.high_price - minPrice) - yOffset;
-		addRect(xOffset + Math.floor(candleDisplay.width / 2), yOffset, candleDisplay.wickWidth, yHeight, candleColor, alpha, accent);
+		yHeight = candlePriceToScreen(priceRange, canvasHeight, candle.high_price - minPrice) - yOffset + 1;
+		addRect(xOffset + Math.floor(candleDisplay.width / 2), yOffset, candleDisplay.wickWidth, yHeight, candleColor, alpha, accent, candleDisplay.textcolor);
 
 
 		xOffset = xOffset + candleDisplay.width + candleDisplay.spacing;

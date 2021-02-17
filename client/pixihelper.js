@@ -22,7 +22,7 @@ addHorizontalLine = function (y, width, linethickness, linecolor, alpha) {
     return container;
 }
 
-addRect = function (x, y, xd, yd, color, alpha, text) {
+addRect = function (x, y, xd, yd, color, alpha, text, textcolor) {
     if (alpha == undefined) {
         alpha = 1.0;
     }
@@ -36,7 +36,8 @@ addRect = function (x, y, xd, yd, color, alpha, text) {
 
     if (text) {
         var textObj = new PIXI.Text(text, {
-            fontSize: 8
+            fontSize: 8,
+            "fill": textcolor
         });
 
         // setting the anchor point to 0.5 will center align the text... great for spinning!
