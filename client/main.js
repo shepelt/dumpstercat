@@ -16,7 +16,7 @@ candleDisplay = {
 	neutral: "0x566573",
 	infowidth: 65,
 	background: "0x161A25",
-	infobackground: "0xFFFFFF",
+	infobackground: "0xDDDDDD",
 	textcolor: "0xFFFFFF"
 };
 
@@ -88,8 +88,7 @@ drawCandles = function (endIndex) {
 
 		// draw visual guide
 		if (i == candles.length - 1) {
-			console.log("last candle!")
-			var dash = addHorizontalLine(boxHeight, canvasWidth + 1, 1, "0xD5402B", 0.9);
+			var dash = addHorizontalLine(boxHeight, canvasWidth + 1, 0.5, "0xD5402B", 0.9);
 			rectContainer.addChild(dash);
 
 			var priceRect = addRect(canvasWidth + 2, boxHeight - 4, candleDisplay.infowidth - 1, 10, "0xD5402B");
@@ -104,7 +103,6 @@ drawCandles = function (endIndex) {
 
 candlePriceToScreen = function (priceRange, canvasHeight, price) {
 	var ratio = price / priceRange;
-	// console.log("ratio", ratio, "price", price, "range", priceRange);
 	var position = canvasHeight - Math.floor(ratio * canvasHeight);
 	return position;
 }
@@ -118,7 +116,7 @@ candleScreenToOrder = function (x) {
 	return index;
 }
 
-Template.chart.onCreated(function helloOnCreated() {
+Template.chart.onCreated(function () {
 	Meteor.subscribe("candles");
 });
 
@@ -127,7 +125,6 @@ app = null;
 stage = null;
 rectContainer = null;
 Template.chart.onRendered(function () {
-	PIXI.utils.sayHello("hello world");
 	//Create a Pixi Application
 	let dims = {
 		width: $("#chart").width(),
@@ -159,3 +156,25 @@ Template.chart.events({
 		drawCandles(getLastCandleIndex());
 	},
 });
+
+Template.btc.helpers({
+	lasttime: function () {
+		var lastCandle = getLastCandle();
+		if (!lastCandle) return "";
+		var lastTime = new Date(lastCandle.timestamp);
+		return formatDate(lastTime);
+	}
+})
+
+Template.eth.helpers({
+	lasttime: function () {
+		var lastCandle = getLastCandle();
+		if (!lastCandle) return "";
+		var lastTime = new Date(lastCandle.timestamp);
+		return formatDate(lastTime);
+	}
+})
+
+formatDate = function (date) {
+	return moment(date).format("YYYY년 MM월 DD일 HH시 mm분");
+}

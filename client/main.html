@@ -13,12 +13,14 @@
 </template>
 
 <template name="btc">
-  <p>Bitcoin</p>
+  <p class="title">업비트 BTC-KRW 페어 5분 캔들</p>
   {{> chart market="BTC"}}
+  <p class="footnote">최신 캔들 : {{lasttime}}</p>
 </template>
 <template name="eth">
-  <p>Ethereum</p>
+  <p class="title">업비트 ETH-KRW 페어 5분 캔들</p>
   {{> chart market="ETH"}}
+  <p class="footnote">최신 캔들 : {{lasttime}}</p>
 </template>
 
 <template name="chart">

@@ -47,6 +47,13 @@ Meteor.startup(() => {
 	setInterval(function () {
 		fetchCandles(2);
 	}, 1000 * intervalSeconds);
+
+	// publish
+	Meteor.publish('candles', function () {
+		return Candles.find({}, {
+			sort: { index: -1 }, limits: 1024
+		});
+	});
 });
 
 
