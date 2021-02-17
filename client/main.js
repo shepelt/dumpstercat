@@ -3,6 +3,7 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { _ } from 'meteor/underscore';
 import './main.html';
 import '../imports/candles.js';
+import './pixihelper.js';
 import './router.js';
 
 candleDisplay = {
@@ -12,29 +13,33 @@ candleDisplay = {
 	spacing: 2,
 	positive: "0xCD6155",
 	negative: "0x5DADE2",
-	neutral: "0x566573"
+	neutral: "0x566573",
+	infowidth: 65
 };
 
 drawCandles = function (endIndex) {
 	// empty container
 	rectContainer.removeChildren();
 
+	var chartWidth = $("#chart").width() - candleDisplay.infowidth;
 
 	candleDisplay.endIndex = endIndex;
-	candleDisplay.startIndex = endIndex - candleScreenToOrder($("#chart").width()) + 1;
+	candleDisplay.startIndex = endIndex - candleScreenToOrder(chartWidth) + 1;
 	var candles = Candles.find({ "market": Session.get("market"), index: { $gte: candleDisplay.startIndex, $lte: candleDisplay.endIndex } }, { sort: { index: 1 } }).fetch();
 
 	// draw frame
 	var canvasHeight = $("#chart").height() - candleDisplay.margin * 2;
-	var canvasWidth = $("#chart").width() - candleDisplay.margin * 2;
+	var canvasWidth = chartWidth - candleDisplay.margin * 2;
 	addRect(candleDisplay.margin, candleDisplay.margin, canvasWidth, canvasHeight, "0xFFFFFF");
+	addRect(chartWidth, candleDisplay.margin, candleDisplay.infowidth - candleDisplay.margin, canvasHeight, "0xFFFFFF");
 
 	var minPrice = _.min(candles, function (candle) { return candle.low_price }).low_price;
 	var maxPrice = _.max(candles, function (candle) { return candle.high_price }).high_price;
 	var priceRange = maxPrice - minPrice;
 
 	var xOffset = candleDisplay.margin;
-	_.each(candles, function (candle) {
+	for (var i = 0; i < candles.length; i++) {
+		var candle = candles[i];
 		var candleRising = candle.rising;
 		var candleColor = candleDisplay.negative;
 		if (candleRising) {
@@ -51,7 +56,7 @@ drawCandles = function (endIndex) {
 		// draw box
 		var yOffset = candlePriceToScreen(priceRange, canvasHeight, candle.box_low_price - minPrice) + candleDisplay.margin;
 		var yHeight = candlePriceToScreen(priceRange, canvasHeight, candle.box_high_price - minPrice) - yOffset;
-
+		var boxHeight = yOffset + yHeight;
 		var alpha = 1.0;
 		if (candle.closed == false) {
 			alpha = 1.0;
@@ -77,7 +82,21 @@ drawCandles = function (endIndex) {
 
 
 		xOffset = xOffset + candleDisplay.width + candleDisplay.spacing;
-	});
+
+		// draw visual guide
+		if (i == candles.length - 1) {
+			console.log("last candle!")
+			var dash = addHorizontalLine(boxHeight, canvasWidth + 1, 1, "0xD5402B", 0.9);
+			rectContainer.addChild(dash);
+
+			var priceRect = addRect(canvasWidth + 2, boxHeight - 4, candleDisplay.infowidth - 1, 10, "0xD5402B");
+			rectContainer.addChild(priceRect);
+
+			var price = addText(canvasWidth + 5, boxHeight - 4, "0x000000", "" + candle.trade_price + " KRW")
+			rectContainer.addChild(price);
+
+		}
+	}
 }
 
 candlePriceToScreen = function (priceRange, canvasHeight, price) {
@@ -113,7 +132,7 @@ Template.chart.onRendered(function () {
 	}
 	// TODO: auto resize
 
-	app = new PIXI.Application({ width: dims.width, height: dims.height });
+	app = new PIXI.Application({ width: dims.width, height: dims.height, resolution: 2, autoResize: true });
 
 	//Add the canvas that Pixi automatically created for you to the HTML document
 	$("#chart")[0].appendChild(app.view)
@@ -137,34 +156,3 @@ Template.chart.events({
 		drawCandles(getLastCandleIndex());
 	},
 });
-
-addRect = function (x, y, xd, yd, color, alpha, text) {
-	if (alpha == undefined) {
-		alpha = 1.0;
-	}
-	var container = new PIXI.Container();
-	var graphics = new PIXI.Graphics();
-	graphics.lineStyle(0);
-	graphics.beginFill(color, alpha);
-	graphics.drawRoundedRect(0, 0, xd, yd, 0);
-	graphics.endFill();
-	container.addChild(graphics);
-
-	if (text) {
-		var textObj = new PIXI.Text(text, {
-			fontSize: 8
-		});
-
-		// setting the anchor point to 0.5 will center align the text... great for spinning!
-		textObj.anchor.set(0.5);
-		textObj.x = xd / 2;
-		textObj.y = yd - 8;
-		container.addChild(textObj);
-	}
-
-	container.x = x;
-	container.y = y;
-	rectContainer.addChild(container);
-
-	return container;
-}
