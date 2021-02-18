@@ -113,7 +113,7 @@ drawCandles = function (endIndex, market, res) {
     }
 
     // save file
-    var filePath = basePath + '/out.png';
+    var filePath = basePath + '/' + market + '_out.png';
 
     PImage.encodePNGToStream(img, fs.createWriteStream(filePath)).then(() => {
         console.log("wrote out the png file to out.png", filePath);

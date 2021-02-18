@@ -13,12 +13,12 @@ var upbitKey = {
 
 var markets = {
 	ETH: {
-		url: "http://172.30.1.2:8080/eth",
-		name: "ETH-KRW"
+		url: "http://121.165.90.98:8080/eth",
+		name: "KRW-ETH"
 	},
 	BTC: {
-		url: "http://172.30.1.2:8080/btc",
-		name: "BTC-KRW"
+		url: "http://121.165.90.98:8080/btc",
+		name: "KRW-BTC"
 	}
 }
 
@@ -66,18 +66,8 @@ Meteor.startup(() => {
 		index: 1
 	});
 
-	// fetchCandles(1024);
+	fetchCandles(1024);
 
-	var candle = getLastCandle();
-	console.log(candle);
-	console.log("candle fetched")
-
-	console.log("rendering serverside")
-	drawCandles(candle.index, "KRW-BTC");
-
-	return;
-
-	// testing
 	Meteor.setInterval(function () {
 		fetchCandles(2);
 	}, 1000 * intervalSeconds);
@@ -240,23 +230,33 @@ function CandleProcessor(market) {
 				} else {
 					candle.dump_count = this.dumpTrendCounter + 1;
 
-
 					// bot injection
 					var processor = this;
 					var dumpCount = candle.dump_count;
-					BotChannels.find({}).forEach(function (item) {
-						var channelID = item._id;
-						if (bot && dumpCount >= 3) {
-							if (processor.lastNotifiedCandle == candle.index) {
-								return; // do not notify again
-							}
-							processor.lastNotifiedCandle = candle.index;
-							console.log("[ BOT ] sending message to channels")
-							console.log(processor);
-							var message = markets[processor.market].name + "에 " + dumpCount + "연속 하락 캔들이 발생\n" + markets[processor.market].url + ""
-							bot.telegram.sendMessage(channelID, message)
+
+					if (bot && dumpCount >= 3) {
+						if (processor.lastNotifiedCandle == candle.index) {
+							return; // do not notify again
 						}
-					});
+
+						// render chart on server side
+						console.log("rendering serverside")
+						drawCandles(candle.index, markets[processor.market].name, function (path) {
+							console.log("output saved to", path);
+
+							// notify bot
+							BotChannels.find({}).forEach(function (item) {
+								var channelID = item._id;
+								console.log("[ BOT ] sending message to channels")
+								console.log(processor);
+								var message = markets[processor.market].name + "에 " + dumpCount + "연속 하락 캔들이 발생\n" + markets[processor.market].url + ""
+								// upload image
+								bot.telegram.sendPhoto(channelID, { source: path }, { caption: message });
+							});
+						});
+					}
+					processor.lastNotifiedCandle = candle.index;
+
 				}
 			}
 
