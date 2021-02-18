@@ -3,6 +3,7 @@ import { _ } from 'meteor/underscore';
 import { Upbit, UpbitWs } from 'upbit-js';
 import { Telegraf } from 'telegraf';
 import '../imports/candles.js';
+import './candlerenderer.js';
 var MA = require('moving-average');
 
 var upbitKey = {
@@ -65,7 +66,18 @@ Meteor.startup(() => {
 		index: 1
 	});
 
-	fetchCandles(1024);
+	// fetchCandles(1024);
+
+	var candle = getLastCandle();
+	console.log(candle);
+	console.log("candle fetched")
+
+	console.log("rendering serverside")
+	drawCandles(candle.index, "KRW-BTC");
+
+	return;
+
+	// testing
 	Meteor.setInterval(function () {
 		fetchCandles(2);
 	}, 1000 * intervalSeconds);
