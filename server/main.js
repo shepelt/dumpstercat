@@ -72,8 +72,9 @@ Meteor.startup(() => {
 
 	// check CQ data
 	if (cryptoquantKey != null) {
+		queryCryptoQuant(1000);
 		Meteor.setInterval(function () {
-			queryCryptoQuant();
+			queryCryptoQuant(32);
 		}, 1000 * 10); // every 10 seconds
 	} else {
 		console.log("[ CQ ] skipping CQ routine");
@@ -252,6 +253,14 @@ function CandleProcessor(market) {
 							return; // do not notify again
 						}
 
+						if (candle.closed == false) {
+							var now = (new Date()).getTime();
+							var offset = now - candle.timestamp;
+							if (offset < 30 * 1000) {
+								return; // skip premature candles before notifying
+							}
+						}
+
 						// render chart on server side
 						console.log("rendering serverside")
 						drawCandles(candle.index, markets[processor.market].name, function (path) {
@@ -286,14 +295,13 @@ var threshold = {
 	netflow: 3000
 }
 
-function queryCryptoQuant() {
+function queryCryptoQuant(limit) {
 	console.log("[ CQ ] fetching API")
 	var url = new URL('https://api.cryptoquant.com/v1/btc/exchange-flows/netflow');
 	var params = {
 		exchange: "all_exchange",
 		window: "block",
-		// limit: 64
-		limit: 1000
+		limit: limit
 	};
 	var authKey = "Bearer " + cryptoquantKey;
 	url.search = new URLSearchParams(params).toString();
@@ -323,14 +331,16 @@ function queryCryptoQuant() {
 				}
 
 				if (block.netflow_total >= threshold.netflow) {
-					console.log("netflow over threshold");
 
-					var message = "거래소에 급격한 비트코인 입금이 감지되었습니다\n" + "블록: " + block.blockheight + " (" + block.datestring + ")";
+					var duration = moment.duration(moment().diff(moment.utc(block.datetime)));
+					var minutes = Math.ceil(duration.asMinutes());
+					var message = "거래소들에 급격한 비트코인 이동이 감지되었습니다.\n" + Math.ceil(block.netflow_total) + " BTC (" + minutes + "분전)";
+					console.log("[ BOT ]", message);
 					// notify bot
 					BotChannels.find({}).forEach(function (item) {
 						var channelID = item._id;
 						console.log("[ BOT ] sending message to channels")
-						bot.telegram.sendMessage(channdlID, message);
+						bot.telegram.sendMessage(channelID, message);
 					});
 
 
