@@ -1,10 +1,14 @@
 import { Meteor } from 'meteor/meteor';
+import { fetch } from "meteor/fetch";
 import { _ } from 'meteor/underscore';
 import { Upbit, UpbitWs } from 'upbit-js';
 import { Telegraf } from 'telegraf';
 import '../imports/candles.js';
 import './candlerenderer.js';
 var MA = require('moving-average');
+var { URL, URLSearchParams } = require('url');
+var moment = require('moment');
+var cryptoquantKey = process.env.CRYPTOQUANT_KEY;
 
 var upbitKey = {
 	accessKey: process.env.UPBIT_ACCESS_KEY,
@@ -66,6 +70,16 @@ Meteor.startup(() => {
 		index: 1
 	});
 
+	// check CQ data
+	if (cryptoquantKey != null) {
+		Meteor.setInterval(function () {
+			queryCryptoQuant();
+		}, 1000 * 10); // every 10 seconds
+	} else {
+		console.log("[ CQ ] skipping CQ routine");
+	}
+
+	// start candle processor
 	fetchCandles(1024);
 
 	Meteor.setInterval(function () {
@@ -75,7 +89,8 @@ Meteor.startup(() => {
 	// publish
 	Meteor.publish('candles', function () {
 		return Candles.find({}, {
-			sort: { index: -1 }, limits: 1024
+			sort: { index: -1 },
+			limits: 1024
 		});
 	});
 
@@ -99,8 +114,7 @@ Meteor.startup(() => {
 						BotChannels.remove(chatID);
 						ctx.leaveChat();
 					})
-				} else {
-				}
+				} else { }
 			}).catch(console.log);
 		})
 
@@ -116,8 +130,7 @@ Meteor.startup(() => {
 					ctx.reply("차트 정보 공유를 시작합니다.").then(function () {
 						BotChannels.upsert(chatID, {});
 					})
-				} else {
-				}
+				} else { }
 			}).catch(console.log);
 		})
 
@@ -265,4 +278,71 @@ function CandleProcessor(market) {
 
 		Candles.upsert(candle.market + candle.timestamp, candle);
 	}
+}
+
+
+var NotifiedBlocks = new Meteor.Collection('notifiedblocks');
+var threshold = {
+	netflow: 3000
+}
+
+function queryCryptoQuant() {
+	console.log("[ CQ ] fetching API")
+	var url = new URL('https://api.cryptoquant.com/v1/btc/exchange-flows/netflow');
+	var params = {
+		exchange: "all_exchange",
+		window: "block",
+		// limit: 64
+		limit: 1000
+	};
+	var authKey = "Bearer " + cryptoquantKey;
+	url.search = new URLSearchParams(params).toString();
+	fetch(url, {
+		method: 'GET',
+		headers: {
+			Authorization: authKey
+		}
+	})
+		.then(res => res.json())
+		.then(json => {
+			if (json.status.code != 200) {
+				console.log("[ CQ ] failed to fetch result", json.result);
+			}
+			var res = json.result;
+			for (var i = res.data.length - 1; i >= 0; i--) {
+				var block = res.data[i];
+				block.netflow_total = parseFloat(block.netflow_total);
+				block.datestring = formatDate(block.datetime);
+
+				if (NotifiedBlocks.findOne(block.blockheight) != null) {
+					continue; // skip duplicate notification
+				}
+
+				if (bot == null) {
+					continue;
+				}
+
+				if (block.netflow_total >= threshold.netflow) {
+					console.log("netflow over threshold");
+
+					var message = "거래소에 급격한 비트코인 입금이 감지되었습니다\n" + "블록: " + block.blockheight + " (" + block.datestring + ")";
+					// notify bot
+					BotChannels.find({}).forEach(function (item) {
+						var channelID = item._id;
+						console.log("[ BOT ] sending message to channels")
+						bot.telegram.sendMessage(channdlID, message);
+					});
+
+
+					NotifiedBlocks.upsert(block.blockheight, { notified: true });
+				}
+			}
+		})
+		.catch(function (err) {
+			console.log("[ CQ ]", err);
+		})
+}
+
+formatDate = function (date) {
+	return moment.utc(date).local().format("YYYY년 MM월 DD일 HH시 mm분");
 }
